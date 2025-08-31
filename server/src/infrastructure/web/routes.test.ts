@@ -9,11 +9,31 @@ describe('Insurance Routes', () => {
 
   beforeEach(() => {
     mockController = {
-      createInsuranceCard: jest.fn().mockImplementation((req, res) => res.status(201).json({ success: true })),
-      getInsuranceCard: jest.fn().mockImplementation((req, res) => res.json({ id: req.params.id })),
-      updateInsuranceCard: jest.fn().mockImplementation((req, res) => res.json({ updated: true })),
-      searchInsuranceCards: jest.fn().mockImplementation((req, res) => res.json({ results: [] })),
-      updateInsuranceStatus: jest.fn().mockImplementation((req, res) => res.json({ statusUpdated: true })),
+      createInsuranceCard: jest.fn().mockImplementation((req, res) => res.status(201).json({ 
+        insuranceCard: { id: '1', name: 'Test' }, 
+        txHash: 'hash123' 
+      })),
+      getInsuranceCard: jest.fn().mockImplementation((req, res) => res.json({ 
+        id: req.params.id, 
+        name: 'Test Card',
+        detail: 'Test detail',
+        creator: 'creator1',
+        metadata: {},
+        agentCardId: 'agent1',
+        status: 'ACTIVE',
+        talebMade: false
+      })),
+      updateInsuranceCard: jest.fn().mockImplementation((req, res) => res.json({ 
+        insuranceCard: { id: req.params.id, name: 'Updated' }, 
+        txHash: 'hash123' 
+      })),
+      searchInsuranceCards: jest.fn().mockImplementation((req, res) => res.json([
+        { id: '1', name: 'Test Card', status: 'ACTIVE' }
+      ])),
+      updateInsuranceStatus: jest.fn().mockImplementation((req, res) => res.json({ 
+        insuranceCard: { id: req.params.id, status: req.body.status }, 
+        txHash: 'hash123' 
+      })),
       claimInsurance: jest.fn().mockImplementation((req, res) => res.json({ txHash: 'hash123' }))
     } as any;
 

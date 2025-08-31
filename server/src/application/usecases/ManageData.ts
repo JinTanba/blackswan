@@ -1,22 +1,40 @@
 import { IBlockchainRepository, TxHash } from "../repositories/IBlockchainRepository";
 import { IInsuranceCardRepository } from "../repositories/IInsuranceCardRepository";
 import { IVectorStore } from "../repositories/IVectorStore";
-import { Prisma, InsuranceCard, InsuranceStatus } from "../../generated/prisma";
+import { IBaseAgentImageRepository } from "../repositories/IBaseAgentImageRepository";
+import { InsuranceCard, InsuranceStatus } from "../../generated/prisma";
 import { Document } from "@langchain/core/documents";
+import { CreateInsuranceCardDto, UpdateInsuranceCardDto, InsuranceCardMapper } from "../../infrastructure/web/InsuranceCardDto";
 
 export class ManageData {
     constructor(
         private insuranceCardRepository: IInsuranceCardRepository,
         private vectorStore: IVectorStore,
-        private blockchainRepository: IBlockchainRepository
+        private blockchainRepository: IBlockchainRepository,
+        private baseAgentImageRepository: IBaseAgentImageRepository
     ) {
         this.insuranceCardRepository = insuranceCardRepository;
         this.vectorStore = vectorStore;
         this.blockchainRepository = blockchainRepository;
+        this.baseAgentImageRepository = baseAgentImageRepository;
     }
 
-    async createInsuranceCard(input: Prisma.InsuranceCardCreateInput): Promise<{ insuranceCard: InsuranceCard, txHash: TxHash }> {
-        const insuranceCard = await this.insuranceCardRepository.create(input);
+    async createInsuranceCard(dto: CreateInsuranceCardDto): Promise<{ insuranceCard: InsuranceCard, txHash: TxHash }> {
+        const { insuranceData, agentData } = InsuranceCardMapper.toCreateInput(dto);
+        
+        // First create the BaseAgentImage
+        const baseAgentImage = await this.baseAgentImageRepository.create(agentData);
+        
+        // Then create the InsuranceCard with the agent reference
+        const insuranceCardInput = {
+            ...insuranceData,
+            agentCard: {
+                connect: { id: baseAgentImage.id }
+            }
+        };
+        
+        const insuranceCard = await this.insuranceCardRepository.create(insuranceCardInput);
+        
         const [txHash,] = await Promise.all([
             this.blockchainRepository.create(insuranceCard),
             this.vectorStore.addDocuments([new Document({
@@ -26,13 +44,15 @@ export class ManageData {
                 }
             })])
         ]);
+
         return { insuranceCard, txHash: txHash };
     }
 
-    async updateInsuranceCard(id: string, input: Prisma.InsuranceCardUpdateInput): Promise<{ insuranceCard: InsuranceCard, txHash: TxHash }> {
+    async updateInsuranceCard(id: string, dto: UpdateInsuranceCardDto): Promise<{ insuranceCard: InsuranceCard, txHash: TxHash }> {
+        const updateInput = InsuranceCardMapper.toUpdateInput(dto);
         const [insuranceCard, txHash] = await Promise.all([
-            this.insuranceCardRepository.update({ where: { id }, data: input }),
-            this.blockchainRepository.updateStatus(id, input.status as InsuranceStatus)
+            this.insuranceCardRepository.update({ where: { id }, data: updateInput }),
+            this.blockchainRepository.updateStatus(id, updateInput.status as InsuranceStatus)
         ]);
         return { insuranceCard, txHash };
     }

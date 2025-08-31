@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { InsuranceController } from './InsuranceController';
+import { InsuranceController } from '../../infrastructure/web/InsuranceController';
 
 export function createInsuranceRoutes(insuranceController: InsuranceController): Router {
   const router = Router();

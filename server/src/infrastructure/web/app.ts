@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { createInsuranceRoutes } from './routes';
-import { InsuranceController } from './InsuranceController';
+import { InsuranceController } from '../../infrastructure/web/InsuranceController';
 
 export function createApp(insuranceController: InsuranceController) {
   const app = express();

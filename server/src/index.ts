@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { PrismaClient } from './generated/prisma';
 import { PrismaInsuranceCardRepository } from './infrastructure/repositories/PrismaInsuranceCardRepository';
+import { PrismaBaseAgentImageRepository } from './infrastructure/repositories/PrismaBaseAgentImageRepository';
 import { InMemoryVectorStore } from './infrastructure/repositories/InMemoryVectorStore';
 import { MockBlockchainRepository } from './infrastructure/repositories/MockBlockchainRepository';
 import { ManageData } from './application/usecases/ManageData';
@@ -12,13 +13,15 @@ async function main() {
   const prisma = new PrismaClient();
   
   const insuranceCardRepository = new PrismaInsuranceCardRepository(prisma);
+  const baseAgentImageRepository = new PrismaBaseAgentImageRepository(prisma);
   const vectorStore = new InMemoryVectorStore();
   const blockchainRepository = new MockBlockchainRepository();
 
   const manageData = new ManageData(
     insuranceCardRepository,
     vectorStore,
-    blockchainRepository
+    blockchainRepository,
+    baseAgentImageRepository
   );
 
   const insuranceManager = new InsuranceManager(blockchainRepository);
