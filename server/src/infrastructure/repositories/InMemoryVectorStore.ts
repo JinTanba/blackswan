@@ -53,4 +53,9 @@ export class InMemoryVectorStore implements IVectorStore {
     
     console.log(`Added ${documents.length} documents to vector store`);
   }
+
+  clear(): void {
+    this.documents = [];
+    this.vectorStore = null;
+  }
 }

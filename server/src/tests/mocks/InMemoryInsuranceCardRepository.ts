@@ -4,20 +4,54 @@ import { IInsuranceCardRepository } from '../../application/repositories/IInsura
 export class InMemoryInsuranceCardRepository implements IInsuranceCardRepository {
   private cards: Map<string, InsuranceCard> = new Map();
   private idCounter = 1;
+  private baseAgentRepository?: any;
 
   async create(data: Prisma.InsuranceCardCreateInput): Promise<InsuranceCard> {
     const id = `card-${this.idCounter++}`;
-    const agentCardId = `agent-${this.idCounter++}`;
+    let agentCardId: string;
+    let agentCard: any = null;
     
-    // Create the agent card data
-    const agentCard = {
-      id: agentCardId,
-      systemPrompt: (data.agentCard as any)?.create?.systemPrompt || '',
-      tools: (data.agentCard as any)?.create?.tools || [],
-      sources: (data.agentCard as any)?.create?.sources || [],
-      metadata: (data.agentCard as any)?.create?.metadata || {},
-      insuranceCard: null
-    };
+    // Handle both create and connect patterns for agentCard
+    if ((data.agentCard as any)?.create) {
+      // Creating new agent card
+      agentCardId = `agent-${this.idCounter++}`;
+      agentCard = {
+        id: agentCardId,
+        systemPrompt: (data.agentCard as any).create.systemPrompt || '',
+        tools: (data.agentCard as any).create.tools || [],
+        sources: (data.agentCard as any).create.sources || [],
+        metadata: (data.agentCard as any).create.metadata || {},
+        insuranceCard: null
+      };
+    } else if ((data.agentCard as any)?.connect?.id) {
+      // Connecting to existing agent card
+      agentCardId = (data.agentCard as any).connect.id;
+      // Try to get from the base agent repository if available
+      if (this.baseAgentRepository) {
+        try {
+          const baseAgent = await this.baseAgentRepository.findUnique({ id: agentCardId });
+          if (baseAgent) {
+            agentCard = baseAgent;
+          }
+        } catch (e) {
+          // Fallback to mock data
+        }
+      }
+      
+      // Fallback mock agent card
+      if (!agentCard) {
+        agentCard = {
+          id: agentCardId,
+          systemPrompt: 'Connected agent system prompt',
+          tools: [],
+          sources: [],
+          metadata: {},
+          insuranceCard: null
+        };
+      }
+    } else {
+      agentCardId = `agent-${this.idCounter++}`;
+    }
 
     const card = {
       id,
@@ -28,6 +62,7 @@ export class InMemoryInsuranceCardRepository implements IInsuranceCardRepository
       agentCardId,
       agentCard, // Include the agentCard relation
       status: data.status as InsuranceStatus,
+      talebMade: data.talebMade || false,
       createdAt: new Date(),
       updatedAt: new Date(),
     } as any;
@@ -148,6 +183,15 @@ export class InMemoryInsuranceCardRepository implements IInsuranceCardRepository
     } else {
       return this.create(args.create as Prisma.InsuranceCardCreateInput);
     }
+  }
+
+  clear(): void {
+    this.cards.clear();
+    this.idCounter = 1;
+  }
+
+  setBaseAgentRepository(repository: any): void {
+    this.baseAgentRepository = repository;
   }
 
   private matchesWhere(card: InsuranceCard, where: Prisma.InsuranceCardWhereInput): boolean {
