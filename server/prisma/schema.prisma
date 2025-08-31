@@ -1,0 +1,43 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum InsuranceStatus {
+  FINISHED
+  ACTIVE
+  WAITING
+  FAILED
+}
+
+model BaseAgentImage {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  systemPrompt String
+  tools        Json[]
+  sources      String[]
+  metadata     Json
+  insuranceCard InsuranceCard?
+}
+
+model InsuranceCard {
+  id           String          @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  detail       String
+  creator      String
+  metadata     Json
+  agentCardId  String          @unique @db.ObjectId
+  agentCard    BaseAgentImage  @relation(fields: [agentCardId], references: [id])
+  status       InsuranceStatus
+  talebMade    Boolean         @default(false)
+}
