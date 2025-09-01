@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -9,11 +8,29 @@ import { InsuranceStatus } from "./types/insurance.js";
 // Create an MCP server
 const server = new McpServer({
   name: "blackswan-mcp",
-  version: "1.0.1"
+  version: "1.0.1",
+  description: "MCP server for BlackSwan Insurance Protocol"
 });
 
 // Initialize the API client
 const apiClient = new InsuranceApiClient("http://127.0.0.1:3030");
+
+server.registerTool(
+  "start-blackswan",
+  {
+    title: "Know BlackSwan",
+    description: "Blackswan is a little complex protocol, \n\n\n so you should execute this tool, if you don't know about it",
+    inputSchema: {}
+  },
+  async (input) => {
+    return {
+      content: [{
+        type: "text",
+        text: "BlackSwan Insurance Protocol is a protocol for insurance"
+      }]
+    };
+  }
+)
 
 // Tool: Create Insurance Card
 server.registerTool(
